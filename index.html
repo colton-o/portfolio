@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+  <title>Colton - About</title>
+
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header>
+    <h1>Colton Onderwater</h1>
+    <nav>
+      <ul>
+        <li><a href="index.html" class="active">Projects</a></li>
+        <li><a href="games.html">Games</a></li>
+        <li><a href="resume.html">Resume</a></li>
+        <li><a href="https://github.com/colton-o" target="_blank" rel="noopener noreferrer">Github</a></li>
+      </ul>
+    </nav>
+    <p>Current student at Curtin University (Bachelor of Engineering: Software Systems). Interested in low level
+      programming.</p>
+  </header>
+
+  <main>
+    <h1>Projects</h1>
+
+    <div class="projects-grid">
+      <!-- Project 1 -->
+      <article class="project-card">
+        <h2>Stewart Platform</h2>
+        <div class="tech-tags">
+          <span class="tag">NRF5340</span>
+          <span class="tag">Zephyr</span>
+          <span class="tag">C</span>
+        </div>
+        <p>Created a stewart platform using PWM signals and servo motors...</p>
+        <div class="project-links">
+          <a href="projects/stewart.html" class="btn">View Details</a>
+          <a href="https://github.com/colton-o/stewart_platform" target="_blank" rel="noopener noreferrer"
+            class="btn">Source
+            Code</a>
+        </div>
+        <div class="project-meta">
+          <span class="status on-hold">On Hold</span>
+          <span class="date">Jan 2024</span>
+        </div>
+      </article>
+
+      <!-- Project 2 -->
+      <article class="project-card">
+        <h2>Basketball Shot Tracker</h2>
+        <div class="tech-tags">
+          <span class="tag">MSP430</span>
+          <span class="tag">C</span>
+          <span class="tag">I2C Protocol</span>
+        </div>
+        <p>A device that detects when a basketball goes though a hoop. Detection via a ultra sonic sensor using timer
+          and IO interrupts. Display shots on a 14 segment display using I2C protocol. </p>
+        <div class="project-links">
+          <a href="projects/shot_tracker.html" class="btn">View Details</a>
+        </div>
+        <div class="project-meta">
+          <span class="status on-hold">Prototype Complete</span>
+          <span class="date">Dec 2025</span>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer>
+    <p>email: colton.o@hotmail.com</p>
+  </footer>
+
+
+</body>
+
+</html>

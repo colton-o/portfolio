@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+  <title>Colton - About</title>
+
+
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+  <header>
+    <h1>Colton Onderwater</h1>
+    <nav>
+      <ul>
+        <li><a href="../index.html" class="active">Projects</a></li>
+        <li><a href="../games.html">Games</a></li>
+        <li><a href="../resume.html">Resume</a></li>
+        <li><a href="https://github.com/colton-o" target="_blank" rel="noopener noreferrer">Github</a></li>
+      </ul>
+    </nav>
+    <p>Current student at Curtin University (Bachelor of Engineering: Software Systems). Interested in low level
+      programming.</p>
+  </header>
+  <main>
+    <h1>Stewart Platform</h1>
+    <h2>Goal</h2>
+    <p>Using this project as a way of becoming familiar with zephyr and the nrf5340
+      by using PWM signals to make a functional stewart platform</p>
+
+
+    <h2>Production</h2>
+    <h3>Tools</h3>
+    <p>6 servo motors<br>
+      nrf5340 dev-kit</p>
+    <h3>Setting up devices</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Signal</th>
+          <th>Channel</th>
+          <th>Label</th>
+          <th>Pin</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>&pwm0</td>
+          <td>0</td>
+          <td>pwm_alpha</td>
+          <td>1.4</td>
+        </tr>
+        <tr>
+          <td>&pwm0</td>
+          <td>1</td>
+          <td>pwm_beta</td>
+          <td>1.5</td>
+        </tr>
+        <tr>
+          <td>&pwm1</td>
+          <td>0</td>
+          <td>pwm_gamma</td>
+          <td>1.6</td>
+        </tr>
+        <tr>
+          <td>&pwm1</td>
+          <td>1</td>
+          <td>pwm_delta</td>
+          <td>1.7</td>
+        </tr>
+        <tr>
+          <td>&pwm2</td>
+          <td>0</td>
+          <td>pwm_epsilon</td>
+          <td>1.8</td>
+        </tr>
+        <tr>
+          <td>&pwm2</td>
+          <td>1</td>
+          <td>pwm_zeta</td>
+          <td>1.9</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>NRF5340 has 4 pwm generators each with four channels I made a overlay file and mapped 6 signals to corrospond
+      with six servos, by using 3 generators, with 2 channels each.</p>
+    <pre><code class="language-c">{
+        mypwms{
+        compatible = "pwm-leds";
+        pwm_alpha: pwm_alpha{
+        status = "okay";
+        wms = &lt;&pwm0 0 PWM_MSEC(20) PWM_POLARITY_INVERTED&gt;;
+        };
+
+        pwm_beta: pwm_beta{
+        status = "okay";
+        pwms = &lt;&pwm0 1 PWM_MSEC(20) PWM_POLARITY_INVERTED&gt;;
+        };
+
+        pwm_gamma: pwm_gamma{
+        status = "okay";
+        pwms = &lt;&pwm1 0 PWM_MSEC(20) PWM_POLARITY_INVERTED&gt;;
+        };
+
+        pwm_delta: pwm_delta{
+        status = "okay";
+        pwms = &lt;&pwm1 1 PWM_MSEC(20) PWM_POLARITY_INVERTED&gt;;
+        };
+
+        pwm_epsilon: pwm_epsilon{
+        status = "okay";
+        pwms = &lt;&pwm2 0 PWM_MSEC(20) PWM_POLARITY_INVERTED&gt;;
+        };
+
+        pwm_zeta: pwm_zeta{
+        status = "okay";
+        pwms = &lt;&pwm2 1 PWM_MSEC(20) PWM_POLARITY_INVERTED&gt;;
+        };
+        };
+        }
+      </code></pre>
+
+    <p>Then I outputted each PWM signal to pins 1.4 - 1.9</p>
+
+    <pre><code class="language-c">&pwm0_default {
+        group1 {
+        psels = &lt;NRF_PSEL(PWM_OUT0, 1, 4)&gt;, &lt;NRF_PSEL(PWM_OUT1, 1, 5)&gt;;
+        };
+        };
+
+        &pinctrl {
+        pwm1_default: pwm1_default {
+        group1 {
+        psels = &lt;NRF_PSEL(PWM_OUT0, 1, 6)&gt;, &lt;NRF_PSEL(PWM_OUT1, 1, 7)&gt;;
+        };
+        };
+
+        pwm2_default: pwm2_default {
+        group1 {
+        psels = &lt;NRF_PSEL(PWM_OUT0, 1, 8)&gt;, &lt;NRF_PSEL(PWM_OUT1, 1, 9)&gt;;
+        };
+        };
+        };
+      </code></pre>
+
+    <h3>Testing Servos</h3>
+
+    <p><img src="servos_media/servo_01.gif" alt="servos"></p>
+
+    <p>Once I had the device tree configured I went on to test each servo could run inpendantly.<br>
+      The pulse width ran form 1000-2000, representing 0-90degrees.<br>
+      First I organised each pwm signal into a array of servo data</p>
+
+    <pre><code class="language-c">typedef struct {
+        const struct pwm_dt_spec name;
+        uint32_t pulse;
+        } servo;
+
+        servo servos[SERVO_NUM] = {{PWM_DT_SPEC_GET(DT_ALIAS(alpha)), MINPULSE},
+        {PWM_DT_SPEC_GET(DT_ALIAS(beta)), MINPULSE},
+        {PWM_DT_SPEC_GET(DT_ALIAS(gamma)), MINPULSE},
+        {PWM_DT_SPEC_GET(DT_ALIAS(delta)), MINPULSE},
+        {PWM_DT_SPEC_GET(DT_ALIAS(epsilon)), MINPULSE},
+        {PWM_DT_SPEC_GET(DT_ALIAS(zeta)), MINPULSE}};
+      </code></pre>
+
+    <p>then made a function that sets all servos to the angle. The idea being, once all calculations for the servos
+      desired angles are done then set all the servos in one function, avoiding too much delay between servos</p>
+
+    <pre><code class="language-c">void set_Servos(servo *servos) {
+        printk("Setting Servos");
+        for (int i = 0; i &lt; SERVO_NUM; i++) {
+        pwm_set(servos[i].name.dev, servos[i].name.channel, PWM_USEC(PERIOD),
+        PWM_USEC(servos[i].pulse), 0);
+        }
+        }
+      </code></pre>
+
+    <p>I made another function so that I could input degrees to move servos instead of pulse width</p>
+
+    <pre><code class="language-c">uint32_t angle_to_pulse(uint8_t angle) {
+        float angle_pct = ((float)angle / 90.0f);
+        uint32_t pulse = MINPULSE + (angle_pct * (MAXPULSE - MINPULSE));
+        return pulse;
+        }
+      </code></pre>
+
+    <p>Then in the main loop I put in two angles values for the servos to switch between</p>
+
+    <pre><code class="language-c"> if (servos[3].pulse == angle_to_pulse(25))
+        servos[3].pulse = angle_to_pulse(50);
+        else
+        servos[3].pulse = angle_to_pulse(25);
+      </code></pre>
+
+    <p>once all servo pulses have been store I set the servos and waited before repeating the loop</p>
+
+    <pre><code class="language-c">set_Servos(servos);
+        k_sleep(K_SECONDS(SLEEP_TIME_S));
+      </code></pre>
+
+    <h3>Prototype</h3>
+
+    <p><img src="servos_media/platform_01.jpeg" alt="platform prototype"></p>
+
+    <p>prototype with some hexagons and blue-tack</p>
+
+    <p>after adjusting the fit I implemented uart to test the movement, this also allows the pulse of each servo to
+      be
+      adusted through events as opposed to a continous loop</p>
+
+    <pre><code class="language-c"> if ((evt-&gt;data.rx.len) == 1) {
+        switch (evt-&gt;data.rx.buf[evt-&gt;data.rx.offset]) {
+        case 'w':
+        for (int i = 0; i &lt; 6; i++)
+        servos[i].pulse = MIDPULSE;
+        set_Servos(servos);
+        break;
+        case 's':
+        for (int i = 0; i &lt; 6; i += 2)
+        servos[i].pulse = MINPULSE;
+        for (int i = 1; i &lt; 6; i += 2)
+        servos[i].pulse = MAXPULSE;
+        set_Servos(servos);
+        break;
+        }
+      </code></pre>
+
+
+    <p><img src="servos_media/platform_proto.gif" alt="servos"></p>
+    <h2>Current Status</h2>
+    <p> Unfortunately this project is on hiatus due to the developer board blowing up while experimenting :(</p>
+  </main>
+</body>
+
+</html>

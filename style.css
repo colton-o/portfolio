@@ -1,0 +1,145 @@
+/* General Styles */
+body {
+  font-family: 'Geist Mono', monospace;
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+  color: #f0f0f0;
+  background-color: #000;
+}
+
+header {
+  background-color: #000;
+  color: #fff;
+  padding: 20px 0;
+  text-align: center;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+nav ul li a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.1rem;
+  transition: color 0.3s ease;
+}
+
+nav ul li a.active,
+nav ul li a:hover {
+  color: #ff6347;
+  /* Tomato color */
+}
+
+main {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+h2 {
+  color: #f0f0f0;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+footer {
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  padding: 10px 0;
+  margin-top: 40px;
+}
+
+
+pre code {
+  display: block;
+  padding: 1em;
+  overflow-x: auto;
+  line-height: 1.45;
+  background: #000000;
+}
+
+.language-c {
+  color: #ffffff;
+  background-color: #303030;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+details>summary {
+  font-size: 2rem;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.project-card {
+  border: 1px solid #e1e4e8;
+  padding: 1.5rem;
+  background: #000;
+}
+
+.tech-tags {
+  margin: 0.5rem 0;
+}
+
+.tag {
+  display: inline-block;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #e1e4e8;
+  padding: 0.2em 0.6em;
+  font-size: 0.8em;
+  margin: 0.2em;
+}
+
+.project-links {
+  margin: 1rem 0;
+}
+
+.btn {
+  display: inline-block;
+  background: transparent;
+  color: white;
+  padding: 0.5em 1em;
+  text-decoration: none;
+  margin-right: 0.5rem;
+  font-size: 0.9em;
+  border: 1px solid white;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: #1F2937;
+  /* Very dark gray */
+  border-color: #6B7280;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.image-grid img {
+  width: 100%;
+  height: 300px;
+  object-fit: contain;
+}
