@@ -21,7 +21,7 @@
         <li><a href="../index.html" class="active">Projects</a></li>
         <li><a href="../games.html">Games</a></li>
         <li><a href="../resume.html">Resume</a></li>
-        <li><a href="https://github.com/colton-o" target="_blank" rel="noopener noreferrer">Github</a></li>
+        <li><a href="https://github.com/colton-o" target="_blank" rel="noopener noreferrer">GitHub</a></li>
       </ul>
     </nav>
     <p>Current student at Curtin University (Bachelor of Engineering: Software Systems). Interested in low level
@@ -29,9 +29,11 @@
   </header>
   <main>
     <h1>Basketball Shot Tracker</h1>
-    <h2>Goal</h2>
+    <h2>Concept</h2>
     <p>
-      Use a sensor and LED display to detect a basketball going through a hoop
+      The main idea was to attach a portable device to the base of the hoop with a sensor.
+      Having the basketball go through the hoop would trigger the sensor and update the amount of shots made.
+      Design is to be as portable as possible and self operating, only requiring an on/off input from the user.
     </p>
 
     <h2>Production</h2>
@@ -41,9 +43,92 @@
       HT16K33 14 Segment LED display <br>
       MSP430FR20476 Launch Pad
     </p>
+
+    <h3>Distance sensor</h3>
+    <p>
+      I opted for an ultra sonic sensor HC-SR04 for this prototype due to it relative ease to implement.
+      According to its datasheet to read a distance from it requires the following timing.
+    </p>
+    <img src="shot_media/sonic_timing_diagram.png" alt="HC-SR04">
+
+    <p>
+      First I set variables for the duration and 'shots made', and assigned the GPIO pins.
+    </p>
+    <pre><code class="language-c">
+        volatile int duration = 0;
+        int shots = 0;
+
+        WDTCTL = WDTPW | WDTHOLD; //disable watch dog
+
+        P1DIR |= BIT0; // trig OUTPUT
+        P2DIR &= ~BIT0; // echo INPUT
+        P1DIR |= BIT1; // distanceLED
+
+        PM5CTL0 &= ~LOCKLPM5; // enable GPIO pins
+      </code></pre>
+    <p>
+      Then referring to the timesheet I sent the pulse, waited for the echo signal high, then waited for the echo signal
+      low, storing the duration (10us count).
+    </p>
+    <pre><code class="language-c">
+        while (1) {
+        // Send trigger pulse
+        P1OUT |= BIT0;
+        __delay_cycles(10); // 10us pulse
+        P1OUT &= ~BIT0;
+
+        while (!(P2IN & BIT0)) {
+        } // wait for echo signal
+
+        // Measure how long echo stays HIGH (this is the pulse width)
+        duration = 0;
+        while ((P2IN & BIT0)) {
+        duration++;
+        __delay_cycles(10);
+        }
+      </code></pre>
+    <p>
+      If the duration is below arbitrary threshold, turn on a led, increment the shots delay for a second
+      to avoid multiple reads. Turn the LED off if the distance threshold is not met on the next cycle.
+    </p>
+    <pre><code class="language-c">
+
+        // check if distance is close to sensor
+        if (duration < 40) {<br>
+          P1OUT |=BIT1;
+          shots++;
+          __delay_cycles(1000000);
+          } else {
+          P1OUT &=~BIT1;
+          }
+          __delay_cycles(60000);
+      </code></pre>
+    <p>
+      Testing the sensor all seems to work.
+    </p>
+    <img src="shot_media/sonic_test.gif" alt="testing sonic sensor">
+    <p>
+      Next was to refactor the code. This time instead of multiple delays, I opted to use a state machine with IO and
+      timer interrupts. First I set up a header file, storing some constants and the state machine.
+    </p>
+    <pre><code class="language-c">
+        #define SHOT_TRIGGER 2000
+        #define MEASURE_CYCLE 60000
+        #define PULSE_WIDTH 10
+        #define SHOT_COOLDOWN 1000000
+
+        typedef enum {
+        STATE_SENDING_PULSE,
+        STATE_ECHO,
+        STATE_ECHO_RECEIVED,
+        STATE_CALCULATING,
+        STATE_SHOOTING_COOLDOWN,
+        STATE_COOLDOWN
+        } system_state;
+      </code></pre>
+
     <div class="image-grid">
 
-      <img src="shot_media/sonic_test.gif" alt="testing sonic sensor">
       <img src="shot_media/display_test.gif" alt="testing segment display">
       <img src="shot_media/IMG_20251212_124845725.jpg" alt="circtut to power device">
       <img src="shot_media/box_test.gif" alt="prototype assembled">
