@@ -72,19 +72,19 @@
     </p>
     <pre><code class="language-c">
         while (1) {
-        // Send trigger pulse
-        P1OUT |= BIT0;
-        __delay_cycles(10); // 10us pulse
-        P1OUT &= ~BIT0;
+          // Send trigger pulse
+	  P1OUT |= BIT0;
+          __delay_cycles(10); // 10us pulse
+          P1OUT &= ~BIT0;
 
-        while (!(P2IN & BIT0)) {
-        } // wait for echo signal
+          while (!(P2IN & BIT0)) {
+          } // wait for echo signal
 
-        // Measure how long echo stays HIGH (this is the pulse width)
-        duration = 0;
-        while ((P2IN & BIT0)) {
-        duration++;
-        __delay_cycles(10);
+          // Measure how long echo stays HIGH (this is the pulse width)
+          duration = 0;
+          while ((P2IN & BIT0)) {
+            duration++;
+          __delay_cycles(10);
         }
       </code></pre>
     <p>
@@ -94,12 +94,12 @@
     <pre><code class="language-c">
 
         // check if distance is close to sensor
-        if (duration < 40) {<br>
+        if (duration < 40) {
           P1OUT |=BIT1;
           shots++;
           __delay_cycles(1000000);
           } else {
-          P1OUT &=~BIT1;
+            P1OUT &=~BIT1;
           }
           __delay_cycles(60000);
       </code></pre>
@@ -118,11 +118,11 @@
         #define SHOT_COOLDOWN 1000000
 
         typedef enum {
-        STATE_SENDING_PULSE,
-        STATE_ECHO,
-        STATE_ECHO_RECEIVED,
-        STATE_SHOOTING_COOLDOWN,
-        STATE_COOLDOWN
+          STATE_SENDING_PULSE,
+          STATE_ECHO,
+          STATE_ECHO_RECEIVED,
+          STATE_SHOOTING_COOLDOWN,
+          STATE_COOLDOWN
         } system_state;
       </code></pre>
     <p> Assign variables to track the echo duration, measurement delay and state machine</p>
@@ -150,16 +150,16 @@
     Set up a function to initialize ports
     <pre><code class="language-c">
         void init_gpio(void) {
-        P1DIR |= BIT0; // P1.0 = Trig (OUTPUT)
-        P1DIR |= BIT1; // P1.1 = Distance LED (OUTPUT)
-        P1OUT = 0x0000;
+          P1DIR |= BIT0; // P1.0 = Trig (OUTPUT)
+          P1DIR |= BIT1; // P1.1 = Distance LED (OUTPUT)
+          P1OUT = 0x0000;
 
-        P2DIR &= ~BIT0; // P2.0 = Echo (INPUT)
-        P2IES &= ~BIT0; // Interrupt on rising edge (echo starts)
-        P2IE |= BIT0; // Enable interrupt on P2.0
-        P2IFG &= ~BIT0; // Clear interrupt flag
+          P2DIR &= ~BIT0; // P2.0 = Echo (INPUT)
+          P2IES &= ~BIT0; // Interrupt on rising edge (echo starts)
+          P2IE |= BIT0; // Enable interrupt on P2.0
+          P2IFG &= ~BIT0; // Clear interrupt flag
 
-        PM5CTL0 &= ~LOCKLPM5;
+          PM5CTL0 &= ~LOCKLPM5;
         }
       </code></pre>
     Make the trigger pulse its own function. I kept the delay in this case due to the short pulse and its need to be
@@ -167,53 +167,53 @@
     time.
     <pre><code class="language-c">
         void send_trigger(void) {
-        P1OUT |= BIT0;
-        __delay_cycles(PULSE_WIDTH); // 10us pulse (still need this short delay)
-        P1OUT &= ~BIT0;
-        current_state = STATE_ECHO;
-        delay_start = TA0R;
+          P1OUT |= BIT0;
+          __delay_cycles(PULSE_WIDTH); // 10us pulse (still need this short delay)
+          P1OUT &= ~BIT0;
+          current_state = STATE_ECHO;
+          delay_start = TA0R;
         }
       </code></pre>
     I then started the main function which first initialized the timer and pins via the functions from before, then
     enabled interrupts and set the state to send the trigger.
     <pre><code class="language-c">
         int main(void) {
-        WDTCTL = WDTPW | WDTHOLD; // Stop watchdog timer
-        init_timer();
-        init_gpio();
-        __enable_interrupt(); // Enable global interrupts
-        current_state = STATE_SENDING_PULSE;
+          WDTCTL = WDTPW | WDTHOLD; // Stop watchdog timer
+          init_timer();
+          init_gpio();
+          __enable_interrupt(); // Enable global interrupts
+          current_state = STATE_SENDING_PULSE;
       </code></pre>
     The main while loop is just a switchcase with the state machine. We start by sending the pulse, then enter low power
     mode, and wait for the interrupt, triggered by the rising edge of the echo pulse.
     <pre><code class="language-c">
         while (1) {
-        switch (current_state) {
-        case STATE_SENDING_PULSE:
-        send_trigger();
-        break;
-        case STATE_ECHO:
-        _BIS_SR(LPM0_bits + GIE);
+          switch (current_state) {
+            case STATE_SENDING_PULSE:
+              send_trigger();
+            break;
+            case STATE_ECHO:
+              _BIS_SR(LPM0_bits + GIE);
       </code></pre>
     Once the interrupt is triggered if it has a rising edge, store the timer in echo_start and switch to falling edge
     detection. This means nothing happens till the falling edge, where we store the end time in echo_end, set the state
     machine to echo received, switch back to rising edge and exit low power mode.
     <pre><code class="language-c">
         __attribute__((interrupt(PORT2_VECTOR))) void port_2_isr(void) {
-        if (P2IFG & BIT0) {
-        if (P2IES & BIT0) {
-        // Falling edge - echo pulse ended
-        echo_end = TA0R; // Capture timer value
-        current_state = STATE_ECHO_RECEIVED;
-        P2IES &= ~BIT0; // Switch to rising edge for next measurement
-        _BIC_SR_IRQ(LPM0_bits);
-        } else {
-        // Rising edge - echo pulse started
-        echo_start = TA0R; // Capture timer value
-        P2IES |= BIT0; // Switch to falling edge detection
-        }
-        P2IFG &= ~BIT0; // Clear interrupt flag
-        }
+          if (P2IFG & BIT0) {
+            if (P2IES & BIT0) {
+              // Falling edge - echo pulse ended
+              echo_end = TA0R; // Capture timer value
+              current_state = STATE_ECHO_RECEIVED;
+              P2IES &= ~BIT0; // Switch to rising edge for next measurement
+              _BIC_SR_IRQ(LPM0_bits);
+            } else {
+              // Rising edge - echo pulse started
+              echo_start = TA0R; // Capture timer value
+              P2IES |= BIT0; // Switch to falling edge detection
+            }
+            P2IFG &= ~BIT0; // Clear interrupt flag
+          }
         }
       </code></pre>
     In the echo received state we get our duration by subtracting the start and end values. If that is below the shot
@@ -221,40 +221,40 @@
     mode and wait for the interrupt. If its greater we go to the state cool down, and wait for the loop to start again.
     <pre><code class="language-c">
         case STATE_ECHO_RECEIVED:
-        if ((echo_end - echo_start) < SHOT_TRIGGER) {<br>
-          P1OUT |= BIT1; // Turn on LED
-          shots++;
-          TA1CTL |= MC__UP | TACLR;
-          current_state = STATE_SHOOTING_COOLDOWN;
-          } else {
-          P1OUT &= ~BIT1; // Turn off LED
-          delay_start = TA0R;
-          current_state = STATE_COOLDOWN;
-          }
+          if ((echo_end - echo_start) < SHOT_TRIGGER) {
+            P1OUT |= BIT1; // Turn on LED
+            shots++;
+            TA1CTL |= MC__UP | TACLR;
+            current_state = STATE_SHOOTING_COOLDOWN;
+            } else {
+              P1OUT &= ~BIT1; // Turn off LED
+              delay_start = TA0R;
+              current_state = STATE_COOLDOWN;
+            }
           break;
           case STATE_SHOOTING_COOLDOWN:
-          _BIS_SR(LPM0_bits + GIE);
+            _BIS_SR(LPM0_bits + GIE);
           break;
           case STATE_COOLDOWN:
-          write_num(shots);
-          delay_cur = TA0R;
-          if ((delay_cur - delay_start) > MEASURE_CYCLE ||
-          delay_cur < delay_start) {<br>
-            current_state = STATE_SENDING_PULSE;
-            }
+            write_num(shots);
+            delay_cur = TA0R;
+            if ((delay_cur - delay_start) > MEASURE_CYCLE ||
+          delay_cur < delay_start) {
+              current_state = STATE_SENDING_PULSE;
+              }
             break;
       </code></pre>
     The shot cool down simply sets the delay start time, sets the state to cool down and disables the interrupt before
     exiting low power mode.
     <pre><code class="language-c">
         __attribute__((interrupt(TIMER1_A0_VECTOR))) void timer1_overflow(void) {
-        if (current_state == STATE_SHOOTING_COOLDOWN) {
-        delay_start = TA0R;
-        current_state = STATE_COOLDOWN;
-        TA1CTL = TASSEL__ACLK | MC__STOP | TACLR;
-        }
-        _BIC_SR_IRQ(LPM0_bits);
-        TA1CCTL0 &= ~CCIFG;
+          if (current_state == STATE_SHOOTING_COOLDOWN) {
+            delay_start = TA0R;
+            current_state = STATE_COOLDOWN;
+            TA1CTL = TASSEL__ACLK | MC__STOP | TACLR;
+          }
+          _BIC_SR_IRQ(LPM0_bits);
+          TA1CCTL0 &= ~CCIFG;
         }
       </code></pre>
     <h3> 14 Segment display with i2c Protocol</h3>
@@ -273,28 +273,28 @@
     In the actual driver I made a function that initialized the i2c protocols on the correct pins of the msp430
     <pre><code class="language-c">
         void I2C_init(void) {
-        P1SEL0 |= BIT2 | BIT3; // P1.2=SDA, P1.3=SCL
-        P1SEL1 &= ~(BIT2 | BIT3);
+          P1SEL0 |= BIT2 | BIT3; // P1.2=SDA, P1.3=SCL
+          P1SEL1 &= ~(BIT2 | BIT3);
 
-        UCB0CTLW0 |= UCSWRST; // Software reset enabled
-        UCB0CTLW0 |= UCMODE_3 | UCMST | UCSSEL__SMCLK; // I2C master mode, SMCLK
-        UCB0BRW = 10; // Baudrate = SMCLK/10 = 100kHz
-        UCB0CTLW0 &= ~UCSWRST; // Clear SW reset, resume operation
+          UCB0CTLW0 |= UCSWRST; // Software reset enabled
+          UCB0CTLW0 |= UCMODE_3 | UCMST | UCSSEL__SMCLK; // I2C master mode, SMCLK
+          UCB0BRW = 10; // Baudrate = SMCLK/10 = 100kHz
+          UCB0CTLW0 &= ~UCSWRST; // Clear SW reset, resume operation
         }
       </code></pre>
     A function for writing data to the i2c data bus.
     <pre><code class="language-c">
         void I2C_write(uint8_t addr, uint8_t *data, uint8_t len) {
-        UCB0I2CSA = addr; // Set slave address
-        UCB0CTLW0 |= UCTR | UCTXSTT; // Transmitter mode, START condition
+          UCB0I2CSA = addr; // Set slave address
+          UCB0CTLW0 |= UCTR | UCTXSTT; // Transmitter mode, START condition
 
-        while (!(UCB0IFG & UCTXIFG0))
-        ; // Wait for TX buffer ready
-
-        for (uint8_t i = 0; i < len; i++) {<br>
-          UCB0TXBUF = data[i]; // Load TX buffer (8-bit write)
           while (!(UCB0IFG & UCTXIFG0))
-          ; // Wait for TX
+          ; // Wait for TX buffer ready
+
+          for (uint8_t i = 0; i < len; i++) {
+            UCB0TXBUF = data[i]; // Load TX buffer (8-bit write)
+            while (!(UCB0IFG & UCTXIFG0))
+            ; // Wait for TX
           }
 
           UCB0CTLW0 |= UCTXSTP; // Generate STOP condition
@@ -305,86 +305,86 @@
     Also a function to intialize the module
     <pre><code class="language-c">
         void HT16K33_init(void) {
-        uint8_t cmd;
-        uint8_t display_buffer[17] = {0};
+          uint8_t cmd;
+          uint8_t display_buffer[17] = {0};
 
-        // Turn on oscillator
-        cmd = HT16K33_ON;
-        I2C_write(HT16K33_ADDR, &cmd, 1);
+          // Turn on oscillator
+          cmd = HT16K33_ON;
+          I2C_write(HT16K33_ADDR, &cmd, 1);
 
-        // Turn on display, no blinking
-        cmd = HT16K33_BLINK | 0x01;
-        I2C_write(HT16K33_ADDR, &cmd, 1);
+          // Turn on display, no blinking
+          cmd = HT16K33_BLINK | 0x01;
+          I2C_write(HT16K33_ADDR, &cmd, 1);
 
-        // Clear display RAM
-        display_buffer[0] = 0x00; // Start at address 0
-        I2C_write(HT16K33_ADDR, display_buffer, 17);
+          // Clear display RAM
+          display_buffer[0] = 0x00; // Start at address 0
+          I2C_write(HT16K33_ADDR, display_buffer, 17);
         }
       </code></pre>
     And finally a function that writes a number to the LED, taking into acount writing to seperate displays over
     multiple digits. Each number is represted by two bytes, one bit representing each LED in the 14 segments.
     <pre><code class="language-c">
         void write_num(int n) {
-        uint8_t buffer[3];
-        uint8_t digits[4];
-        uint8_t digit_count = 0;
-        int temp = n;
+          uint8_t buffer[3];
+          uint8_t digits[4];
+          uint8_t digit_count = 0;
+          int temp = n;
 
-        if (n == 0) {
-        digits[0] = 0;
-        digit_count = 1;
-        }
-        while (temp > 0) {
-        digits[digit_count] = temp % 10;
-        temp /= 10;
-        digit_count++;
-        }
-        for (int i = 0; i < digit_count; i++) {<br>
-          buffer[0] = 6 - (2 * i);
-          switch (digits[i]) {
-          case 0:
-          buffer[1] = 0b00111111;
-          buffer[2] = 0b00001100;
-          break;
-          case 1:
-          buffer[1] = 0b00000110;
-          buffer[2] = 0b00000100;
-          break;
-          case 2:
-          buffer[1] = 0b11011011;
-          buffer[2] = 0b00000000;
-          break;
-          case 3:
-          buffer[1] = 0b10001111;
-          buffer[2] = 0b00000000;
-          break;
-          case 4:
-          buffer[1] = 0b11100110;
-          buffer[2] = 0b00000000;
-          break;
-          case 5:
-          buffer[1] = 0b11101101;
-          buffer[2] = 0b00000000;
-          break;
-          case 6:
-          buffer[1] = 0b11111101;
-          buffer[2] = 0b00000000;
-          break;
-          case 7:
-          buffer[1] = 0b00000001;
-          buffer[2] = 0b00010100;
-          break;
-          case 8:
-          buffer[1] = 0b11111111;
-          buffer[2] = 0b00000000;
-          break;
-          case 9:
-          buffer[1] = 0b11101111;
-          buffer[2] = 0b00000000;
-          break;
+          if (n == 0) {
+            digits[0] = 0;
+            digit_count = 1;
           }
-          I2C_write(HT16K33_ADDR, buffer, 3);
+          while (temp > 0) {
+            digits[digit_count] = temp % 10;
+            temp /= 10;
+            digit_count++;
           }
+          for (int i = 0; i < digit_count; i++) {
+            buffer[0] = 6 - (2 * i);
+            switch (digits[i]) {
+            case 0:
+              buffer[1] = 0b00111111;
+              buffer[2] = 0b00001100;
+            break;
+            case 1:
+              buffer[1] = 0b00000110;
+              buffer[2] = 0b00000100;
+            break;
+            case 2:
+              buffer[1] = 0b11011011;
+              buffer[2] = 0b00000000;
+            break;
+            case 3:
+              buffer[1] = 0b10001111;
+              buffer[2] = 0b00000000;
+            break;
+            case 4:
+              buffer[1] = 0b11100110;
+              buffer[2] = 0b00000000;
+            break;
+            case 5:
+              buffer[1] = 0b11101101;
+              buffer[2] = 0b00000000;
+            break;
+            case 6:
+              buffer[1] = 0b11111101;
+              buffer[2] = 0b00000000;
+            break;
+            case 7:
+              buffer[1] = 0b00000001;
+              buffer[2] = 0b00010100;
+            break;
+            case 8:
+              buffer[1] = 0b11111111;
+              buffer[2] = 0b00000000;
+            break;
+            case 9:
+              buffer[1] = 0b11101111;
+              buffer[2] = 0b00000000;
+            break;
+            }
+            I2C_write(HT16K33_ADDR, buffer, 3);
+           }
           }
       </code></pre>
 
